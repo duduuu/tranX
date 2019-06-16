@@ -1,29 +1,8 @@
 # define primitive fields
-int, string
+id, var, var_type, pred
 
-obj = Objective(int num, stmt* hdr)
+obj = Objective(id name, expr* hdr)
 
-stmt = Value(expr value)
-    | Type(expr value)
-    | SubType(expr value)
-    | Size(expr value)
-    | Length(expr value)
-    | Kids(expr value)
-    | Parent(expr value)
-    | Count(expr value)
-    | Limits(expr value)
-    | Range(expr value)
-    | Filter(expr value)
-    | Domain(expr value)
-    | FuncType(expr value)
-
-
-expr = Integer(int i)
-    | Str(string s)
-    | Dict(expr* keys, expr* values)
-    | Reference(obj r)
-    | TypeOp(typeop op)
-    | FilterOp(filterop op)
-
-typeop = Pages | Font | Catalog
-filterop = FlateDecode
+expr = Apply(pred predicate, expr* arguments)
+    | Variable(var_type type, var variable)
+    | Reference(id ref)
