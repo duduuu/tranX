@@ -122,7 +122,7 @@ def pdf_to_ast(grammar, lf_node):
         # obj = Objective(id name, expr* hdr)
         prod = grammar.get_prod_by_ctr_name('Objective')
 
-        id_field = RealizedField(prod['id'], value=lf_node.name)
+        id_field = RealizedField(prod['name'], value=lf_node.name)
 
         hdr_ast_nodes = []
         for hdr_node in lf_node.children:
@@ -132,7 +132,8 @@ def pdf_to_ast(grammar, lf_node):
 
         ast_node = AbstractSyntaxTree(prod, [id_field, hdr_field])
 
-    elif lf_node.name in ['Type', 'SubType', 'Size', 'Length', 'Kids', 'Parent', 'Count', 'Limits', 'Range', 'Filter', 'Domain', 'FuncType'] :
+    elif lf_node.name in ['Type', 'SubType', 'Size', 'Length', 'Kids', 'Parent', 'Count', 'Limits',
+                          'Range', 'Filter', 'Domain', 'FuncType', 'Pages', 'MediaBox', 'Resources'] :
         # expr -> Apply(pred predicate, expr* arguments)
         prod = grammar.get_prod_by_ctr_name('Apply')
 
@@ -160,9 +161,9 @@ def pdf_to_ast(grammar, lf_node):
         # expr = Variable(var_type type, var variable)
         prod = grammar.get_prod_by_ctr_name('Variable')
 
-        var_type_field = RealizedField(prod['type'], value='string')
+        var_type_field = RealizedField(prod['type'], value='int')
 
-        var_field = RealizedField(prod['variable'], value=int(lf_node.name[1:]))
+        var_field = RealizedField(prod['variable'], value=lf_node.name[1:])
 
         ast_node = AbstractSyntaxTree(prod, [var_type_field, var_field])
 
@@ -170,9 +171,13 @@ def pdf_to_ast(grammar, lf_node):
         # expr = Reference(id ref)
         prod = grammar.get_prod_by_ctr_name('Reference')
 
-        var = 'obj' + lf_node.name[1:]
+        ref_var = 'obj' + lf_node.name[1:]
+        ref_field = RealizedField(prod['ref'], value=ref_var)
 
-        ast_node = AbstractSyntaxTree(prod, RealizedField(prod['ref'], value=var))
+        ast_node = AbstractSyntaxTree(prod, ref_field)
+
+    else:
+        raise NotImplementedError
 
     return ast_node
 
@@ -180,18 +185,32 @@ def pdf_to_ast(grammar, lf_node):
 def ast_to_pdf(lf_node):
     sb = StringIO()
     constructor_name = lf_node.production.constructor.name
+
     if constructor_name == 'Object':
-        name = lf_node['name']
+        name = lf_node['name'].value
         sb.write(' (')
         sb.write(name)
+
     elif constructor_name == 'Apply':
         predicate = lf_node['predicate'].value
         sb.write(predicate)
         sb.write(' (')
-
+        for arg_node in lf_node.children:
+            sb.write(ast_to_pdf(arg_node))
         sb.write(' )')
+
     elif constructor_name == 'Variable':
-        var_type = lf_node['var_type'].value
+        var_type = lf_node['type'].value
+        if var_type == 'int':
+            var = 'I' + lf_node['variable'].value
+        elif var_type == 'string':
+            var = 'S' + lf_node['variable'].value
+        sb.wirte(var)
+
+    elif constructor_name == 'Reference':
+        ref = lf_node['ref'].value
+        ref = 'R' + ref[3:]
+        sb.write(ref)
 
     return sb.getvalue()
 
